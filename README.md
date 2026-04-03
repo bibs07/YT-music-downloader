@@ -87,7 +87,7 @@ For maximum compatibility with vehicle infotainment systems, use Disk Utility wi
 
 ### Pro-Tip
 
-If you experience a sudden wave of 🚫 FAILED messages, it usually means your IP has been throttled. Running python3 -m yt_dlp --rm-cache-dir again or switching your network/VPN usually resolves the handshake block.
+If you experience a sudden wave of 🚫 FAILED messages, it usually means your IP has been throttled. Running `python3 -m yt_dlp --rm-cache-dir` again or switching your network/VPN usually resolves the handshake block.
 
 # ⚖️ Disclaimer
 
