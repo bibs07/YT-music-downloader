@@ -1,34 +1,54 @@
 import yt_dlp
-from mutagen.id3 import ID3, APIC, TIT2, TPE1, TALB, TDRC
+from mutagen.id3 import ID3, APIC, TIT2, TPE1
 from PIL import Image
 import os
 import glob
 import io
 import re
 
+# Custom silent logger to swallow all internal yt-dlp chatter
+class SilentLogger:
+    def debug(self, msg): pass
+    def warning(self, msg): pass
+    def error(self, msg): pass
+
 def sanitize(filename):
     return re.sub(r'[\\/*?:"<>|]', "", filename)
 
 def get_expected_filename(url):
     ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': 'downloads/%(artist)s - %(title)s.%(ext)s',
         'quiet': True, 
+        'no_warnings': True,
+        'logger': SilentLogger(),
         'skip_download': True, 
         'nocheckcertificate': True,
-        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'android'],
+                'skip': ['dash', 'hls']
+            }
+        },
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
             if not info: return None
-            artist = info.get('artist') or info.get('uploader', 'Unknown')
-            title = info.get('title', 'Unknown')
-            return f"{sanitize(f'{artist} - {title}')}.mp3"
-        except: return None
+            
+            # Use yt-dlp's internal naming parsing
+            fake_filepath = ydl.prepare_filename(info)
+            base_path = os.path.splitext(fake_filepath)[0]
+            folder, filename = os.path.split(base_path)
+            
+            return os.path.join(folder, f"{sanitize(filename)}.mp3")
+        except: 
+            return None
 
 def process_song(url):
-    expected_name = get_expected_filename(url)
-    if expected_name and os.path.exists(os.path.join('downloads', expected_name)):
-        print(f"⏭️  SKIPPING: '{expected_name}'")
+    expected_mp3_path = get_expected_filename(url)
+    if expected_mp3_path and os.path.exists(expected_mp3_path):
+        print(f"⏭️  SKIPPING: '{os.path.basename(expected_mp3_path)}'")
         return
 
     ydl_opts = {
@@ -41,6 +61,8 @@ def process_song(url):
         'outtmpl': 'downloads/%(artist)s - %(title)s.%(ext)s',
         'writethumbnail': True,
         'quiet': True,
+        'no_warnings': True,
+        'logger': SilentLogger(),
         'nocheckcertificate': True,
         'allow_remote_components': True,
         'js_runtimes': {'node': {}},
