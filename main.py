@@ -1,13 +1,13 @@
 import yt_dlp
 import os
 import sys
-from downloader_lib import process_song
+from downloader_lib import process_song, SilentLogger
 
 def main():
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
 
-    print("\n--- YT Music Downloader (Guest Mode) ---")
+    print("\n--- YT Music Downloader ---")
     user_url = input("Paste Song or Playlist URL: ").strip()
 
     is_playlist = "list=" in user_url and "watch?v=" not in user_url
@@ -16,17 +16,19 @@ def main():
     extract_opts = {
         'extract_flat': True, 
         'quiet': True, 
+        'no_warnings': True,
+        'logger': SilentLogger(),
         'nocheckcertificate': True,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android'],
+                'player_client': ['web'],
                 'skip': ['dash', 'hls']
             }
         },
     }
 
     with yt_dlp.YoutubeDL(extract_opts) as ydl:
-        print("🔍 Scanning (Guest Mode)...")
+        print("🔍 Scanning ...")
         try:
             info = ydl.extract_info(user_url, download=False)
             if is_playlist and 'entries' in info:
@@ -41,7 +43,9 @@ def main():
             return
 
     total_songs = len(links_to_download)
-    if total_songs == 0: return
+    if total_songs == 0: 
+        print("No tracks found.")
+        return
 
     print(f"\nTargeting {total_songs} song(s).")
     confirm = input(f"Proceed with batch? (y/n): ").lower().strip()
